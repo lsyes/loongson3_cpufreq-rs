@@ -1,0 +1,37 @@
+Source: loongson3-cpufreq
+Section: kernel
+Priority: optional
+Maintainer: Junxi Zeng <junxizeng2008@outlook.com>
+Build-Depends: debhelper-compat (= 13),
+               dh-sequence-dkms
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+Vcs-Browser: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/cpufreq/loongson3_cpufreq.c
+Vcs-Git: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+
+Package: loongson3-cpufreq-dkms
+Architecture: loong64
+Depends: ${misc:Depends}
+Description: CPUFreq driver for Loongson-3 processors (Rust, DKMS sources)
+ This package provides the loongson3_cpufreq driver, taken from the Linux
+ kernel source tree (drivers/cpufreq/loongson3_cpufreq.c) and rewritten in
+ Rust for Linux, together with the scripts that set up the toolchain it
+ needs.
+ .
+ The driver talks to the Loongson-3 platform management controller
+ through the IOCSR SMC mailbox to discover the available frequency
+ levels, switch the CPU frequency and enable DVFS and boost.  It
+ registers itself as the "loongson3" cpufreq driver.
+ .
+ The platform device it binds to is registered unconditionally by
+ arch/loongarch/power/platform.c, therefore the module only needs to be
+ loaded on a Loongson-3 system whose CPU advertises the SCALEFREQ
+ feature.
+ .
+ A Rust module cannot be built against a linux-headers package the way a
+ C one can: it needs the kernel's compiled Rust abstractions and the very
+ rustc the kernel was built with, because Rust mangles symbol names with a
+ hash of the compiler.  The module is therefore not built automatically;
+ run tools/setup-rfl.sh (no root needed) and then make, or see
+ /usr/share/doc/loongson3-cpufreq-dkms/README.Debian.

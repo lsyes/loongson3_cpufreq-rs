@@ -1,0 +1,6 @@
+loongson3_cpufreq.rs	usr/src/loongson3-cpufreq-7.2.8/
+Makefile		usr/src/loongson3-cpufreq-7.2.8/
+dkms.conf		usr/src/loongson3-cpufreq-7.2.8/
+README.md		usr/src/loongson3-cpufreq-7.2.8/
+c-reference		usr/src/loongson3-cpufreq-7.2.8/
+tools			usr/src/loongson3-cpufreq-7.2.8/

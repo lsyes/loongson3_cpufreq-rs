@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# The dh-sequence-dkms addon (from the dh-dkms package) is pulled in
+# automatically through Build-Depends.  dh_dkms installs
+# debian/loongson3-cpufreq-dkms.dkms as dkms.conf below
+# /usr/src/loongson3-cpufreq-7.2.8/ and generates the postinst/prerm
+# snippets that register, build and remove the module with DKMS.
+
+%:
+	dh $@
+
+# The module is deliberately NOT compiled at package build time: DKMS
+# builds it on the target machine, in the postinst, against the kernel
+# that is actually installed there.  debhelper's automatic helpers must
+# therefore not run the out-of-tree Makefile -- its "install" target
+# would otherwise write straight into /lib/modules/ of the build host.
+override_dh_auto_configure:
+override_dh_auto_build:
+override_dh_auto_test:
+override_dh_auto_install:
+
+# kbuild leaves its artefacts in the source directory when someone runs
+# plain `make` there.
+override_dh_clean:
+	dh_clean
+	rm -f *.o *.ko *.mod *.mod.c .*.cmd modules.order Module.symvers
+	rm -rf .tmp_versions

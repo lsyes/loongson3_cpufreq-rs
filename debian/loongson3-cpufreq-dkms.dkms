@@ -1,0 +1,28 @@
+# DKMS configuration for the Rust rewrite of the Loongson-3 CPUFreq driver.
+#
+# IMPORTANT: a *Rust* kernel module cannot be built the usual way from a
+# linux-headers package.  It is compiled against the kernel's compiled Rust
+# abstractions (rust/libkernel.rmeta, rust/libcore.rmeta, ...), which the
+# headers package does not ship, and it has to use the exact rustc the kernel
+# itself was built with, because Rust mangled symbol names embed a hash of the
+# compiler.  `tools/setup-rfl.sh` prepares such a tree and `tools/rfl-env.sh`
+# exports the matching environment.
+#
+# AUTOINSTALL is therefore deliberately left unset: DKMS registers the module
+# but does not build it behind your back -- that would fail on a stock system
+# and would be retried on every kernel upgrade.  Once a kernel tree has been
+# prepared, build it with:
+#
+#     . /usr/src/loongson3-cpufreq-7.2.8/tools/rfl-env.sh
+#     dkms build   loongson3-cpufreq/7.2.8 --kernelsourcedir="$KDIR"
+#     dkms install loongson3-cpufreq/7.2.8 --kernelsourcedir="$KDIR"
+#
+# or simply
+#
+#     cd /usr/src/loongson3-cpufreq-7.2.8 && make && sudo make install
+
+PACKAGE_NAME="loongson3-cpufreq"
+PACKAGE_VERSION="#MODULE_VERSION#"
+BUILT_MODULE_NAME[0]="loongson3_cpufreq"
+DEST_MODULE_LOCATION[0]="/updates"
+BUILD_EXCLUSIVE_ARCH="loongarch64"

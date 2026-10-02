@@ -1,0 +1,36 @@
+loongson3-cpufreq (7.2.8-2) unstable; urgency=medium
+
+  * Rewrite the driver in Rust for Linux (loongson3_cpufreq.rs),
+    behaviourally equivalent to the C original kept in c-reference/:
+    same SMC mailbox protocol, same frequency table, same cpufreq
+    callbacks, same driver name and flags.
+  * Fix the defects of the C driver that the rewrite rules out:
+    - out-of-bounds read of `policy->freq_table[boost_level - 1]` when
+      the firmware reports boost_level 0 (unsigned underflow) or a
+      boost_level beyond the number of levels;
+    - `->get()` reporting a bogus ~4.29 THz frequency when the firmware
+      request fails, instead of propagating the error;
+    - the per-CPU frequency-table cache leaving dangling per-CPU
+      pointers behind once the platform device is removed;
+    - a package-indexed mutex array that could be indexed with the wrong
+      package, since a request may target a core of another package.
+  * Add tools/setup-rfl.sh and tools/rfl-env.sh: a Rust module needs the
+    kernel's compiled Rust abstractions and the exact rustc the kernel
+    was built with, which linux-headers does not provide.
+  * Do not build the module from the postinst: AUTOINSTALL is unset in
+    dkms.conf, because a DKMS build against linux-headers cannot work for
+    a Rust module.  See debian/README.Debian.
+
+ -- Junxi Zeng <junxizeng2008@outlook.com>  Fri, 02 Oct 2026 12:00:00 +0800
+
+loongson3-cpufreq (7.2.8-1) unstable; urgency=medium
+
+  * Initial release.
+  * The loongson3_cpufreq driver is taken from the Linux 7.2.8 kernel
+    source tree (drivers/cpufreq/loongson3_cpufreq.c, md5
+    982167cec8d3076121cb92af23c9448f) and turned into an independent
+    out-of-tree kernel module, built through DKMS.
+  * The driver is not modified; only an out-of-tree Makefile, a
+    dkms.conf and the Debian packaging are added.
+
+ -- Your Name <you@example.com>  Fri, 02 Oct 2026 11:22:56 +0800

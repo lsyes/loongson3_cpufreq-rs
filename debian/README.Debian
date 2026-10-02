@@ -1,0 +1,56 @@
+Rust edition of the Loongson-3 CPUFreq driver -- read this before using it
+=========================================================================
+
+This package ships the loongson3_cpufreq driver rewritten in Rust for Linux.
+The sources and the build helper scripts are installed into
+
+    /usr/src/loongson3-cpufreq-7.2.8/
+
+A Rust kernel module cannot be built the way a C one can
+--------------------------------------------------------
+
+`dkms build` (or `make -C /lib/modules/$(uname -r)/build M=... modules`) works
+by compiling the module against a *linux-headers* package.  That is enough for a
+C module, but not for a Rust one, for two independent reasons:
+
+ 1. A Rust module is compiled against the kernel's compiled Rust abstractions
+    (`rust/libkernel.rmeta`, `rust/libcore.rmeta`, `rust/bindings/...`).  The
+    headers package does not contain them; distributions only build the C parts
+    for out-of-tree modules.
+
+ 2. Every Rust symbol is mangled with a hash of the compiler and the exact
+    compilation flags.  A module built with a different rustc -- even a
+    different build of the same upstream release -- refers to symbols that the
+    running kernel does not export, and `insmod` fails with "Unknown symbol".
+
+Because of that this package deliberately does not build the module in its
+postinst: `AUTOINSTALL` is left unset in dkms.conf, so DKMS only registers the
+module.  Building it automatically would fail on a stock system and would be
+retried on every kernel upgrade.
+
+How to build it
+---------------
+
+    apt install linux-headers-$(uname -r)     # for Module.symvers
+    cd /usr/src/loongson3-cpufreq-7.2.8
+    tools/setup-rfl.sh                        # no root needed, one-off
+    . tools/rfl-env.sh
+    make
+    sudo make install
+
+`tools/setup-rfl.sh` downloads -- it never installs -- the kernel source package
+and the exact rustc/bindgen toolchain the running kernel was built with, into
+~/.cache/loongson3-cpufreq-rfl, compiles the kernel's Rust support there and
+copies the running kernel's Module.symvers into the tree.  It prints the
+commands to run afterwards.  Re-running it is cheap.
+
+To drive DKMS with that tree instead of the headers package:
+
+    . tools/rfl-env.sh
+    dkms build   loongson3-cpufreq/7.2.8 --kernelsourcedir="$KDIR"
+    dkms install loongson3-cpufreq/7.2.8 --kernelsourcedir="$KDIR"
+
+Note that the tree has to be prepared again for every new kernel release, since
+the Rust symbol hashes and the ABI change with it.
+
+ -- Junxi Zeng <junxizeng2008@outlook.com>, Fri, 02 Oct 2026 12:00:00 +0800

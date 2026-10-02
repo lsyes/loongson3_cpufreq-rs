@@ -1,0 +1,32 @@
+# kbuild / out-of-tree module build artefacts
+*.o
+*.ko
+*.mod
+*.mod.c
+*.symvers
+modules.order
+Module.symvers
+.tmp_versions/
+.*.cmd
+
+# DKMS
+/var/lib/dkms/
+
+# Debian packaging artefacts
+/loongson3-cpufreq_*.orig.tar.gz
+/debian/files
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/*.substvars
+/debian/*.debhelper
+/debian/tmp/
+/debian/loongson3-cpufreq-dkms/
+/debian/clean
+
+# Rust-for-Linux build artefacts (the toolchain cache lives outside the tree)
+*.rmeta
+*.rlib
+*.rsi
+*.s
+*.ll
+*.bc

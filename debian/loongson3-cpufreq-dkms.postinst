@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# dh_dkms appends its own DKMS registration snippet at the debhelper marker at
+# the bottom of this file.  Because a Rust module cannot be built from a
+# linux-headers package, that snippet only *registers* the module -- AUTOINSTALL
+# is unset in dkms.conf -- so the message below tells the user how to actually
+# build it.
+
+set -e
+
+if [ "$1" = "configure" ]; then
+	cat <<'EOF'
+loongson3-cpufreq: the Rust module is registered with DKMS but was not built.
+
+A Rust kernel module needs the kernel's compiled Rust abstractions and the
+exact rustc the kernel was built with, neither of which a linux-headers
+package provides.  Prepare them once with
+
+    apt install linux-headers-$(uname -r)
+    cd /usr/src/loongson3-cpufreq-7.2.8 && tools/setup-rfl.sh
+    . tools/rfl-env.sh && make && make install
+
+See /usr/share/doc/loongson3-cpufreq-dkms/README.Debian for details.
+EOF
+fi
+
+#DEBHELPER#
+
+exit 0
