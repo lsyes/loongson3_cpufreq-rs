@@ -4,7 +4,7 @@ Loongson-3 CPUfreq 驱动的 Rust for Linux 重写。协议层与 C 版逐字节
 
 - 目标：Loongson-3A6000 / loongarch64，内核 `7.2.8+deb14-loong64`
 - 原来的C语言驱动：[`c-reference/loongson3_cpufreq.c`](c-reference/loongson3_cpufreq.c)（389 行）
-- Rust 驱动：[`loongson3_cpufreq.rs`](loongson3_cpufreq.rs)（605 行，含文档注释）
+- Rust 驱动：[`loongson3_cpufreq.rs`](loongson3_cpufreq.rs)（727 行，含文档注释）
 - 许可证：GPL-2.0-only
 
 **实机效果**：修复前只暴露 224 档中的最低 16 档，固件把请求锁在 937 MHz；修复后稳定运行 2500.9 MHz，boost 下 2600.9 MHz。
@@ -81,20 +81,38 @@ sudo tools/install.sh            # 安装并检查 sysfs
 | `min_freq_mhz` | 抬高 `policy->min`（`scaling_min_freq`），向上取到最近真实档位。`800` → 875 MHz。不改频率表，`cpuinfo_min_freq` 仍为 375000 |
 | `transition_delay_us` | 换频最短间隔。`0` = 由 10 µs latency 推导（15 µs）；推荐 `1000`（约 3% 单核开销，满载爬升 ~5 ms） |
 
-用 `sudo tools/sweep-rate-limit.sh` 扫出适合本机的值，然后固化：
+用 `sudo tools/sweep-rate-limit.sh` 扫出适合本机的值，然后一条命令固化开机配置：
 
 ```sh
-echo 'options loongson3_cpufreq min_freq_mhz=800 transition_delay_us=1000' \
-  | sudo tee /etc/modprobe.d/loongson3-cpufreq.conf
+sudo tools/install-boot-config.sh
 ```
 
-开机自动加载 + 切 `schedutil`（本机默认 governor 为 `performance`，且重载模块会重置）：
+它写入五个文件并启用一个 oneshot 服务：
+
+| 文件 | 作用 |
+| --- | --- |
+| `/etc/modules-load.d/loongson3-cpufreq.conf` | 开机加载模块 |
+| `/etc/modprobe.d/loongson3-cpufreq.conf` | 上面两个模块参数 |
+| `/etc/default/loongson3-cpufreq` | `GOVERNOR` / `BOOST` |
+| `/usr/local/sbin/loongson3-cpufreq-apply` | 运行时脚本 |
+| `/etc/systemd/system/loongson3-cpufreq.service` | 模块加载后执行该脚本 |
 
 ```sh
-echo loongson3_cpufreq | sudo tee /etc/modules-load.d/loongson3-cpufreq.conf
+sudo tools/install-boot-config.sh --min-freq 875 --delay-us 1000 --governor schedutil
+sudo tools/install-boot-config.sh --no-boost      # 不开 boost（默认开）
+sudo tools/install-boot-config.sh --remove        # 全部撤销
+sudo tools/install-boot-config.sh --help
 ```
 
-配合一个 oneshot systemd service：`modprobe` 后向所有 `scaling_governor` 写 `schedutil`。
+**governor 和 boost 必须由服务在模块加载后再设一遍**，两者都挂在随驱动注册而重建的对象上：
+
+- `scaling_governor` 属于 `struct cpufreq_policy`，新 policy 总是从内核默认 governor 开始
+  （本机 `CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y`）；
+- `cpufreq_driver.boost_enabled`（全局 `/sys/devices/system/cpu/cpufreq/boost`）每次驱动注册
+  都回到零初始化的 `false`。
+
+所以**每次重载模块它们都会丢**。`power-profiles-daemon` 在本机是 active/balanced，但走
+placeholder 后端、不接管 governor，不会与这个服务冲突。
 
 ## 打包
 
